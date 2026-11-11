@@ -313,7 +313,17 @@
         let tempSelectedSize = 16;
 
         // ========== INIT ==========
-        lucide.createIcons();
+        // An toàn với Lucide (nếu CDN lỗi cũng không làm hỏng app)
+        function safeCreateIcons() {
+            try {
+                if (window.lucide && typeof lucide.createIcons === 'function') {
+                    lucide.createIcons();
+                }
+            } catch (e) {
+                console.warn('Lucide icons error:', e);
+            }
+        }
+        safeCreateIcons();
 
         // Grid option selection
         document.querySelectorAll('.grid-option-btn').forEach(btn => {
@@ -330,50 +340,41 @@
                 const selectedBadge = btn.querySelector('.check-badge');
                 if (selectedBadge) selectedBadge.classList.remove('hidden');
 
-                tempSelectedSize = parseInt(btn.getAttribute('data-size'));
+                tempSelectedSize = parseInt(btn.getAttribute('data-size')) || 16;
             });
         });
 
-        confirmGridSelectionBtn.addEventListener('click', () => {
-            initGrid(tempSelectedSize);
-            gridSelectModal.classList.add('hidden');
-        });
+        // Nút Tiếp tục — bắt buộc phải chạy được
+        if (confirmGridSelectionBtn) {
+            confirmGridSelectionBtn.addEventListener('click', function () {
+                try {
+                    const size = tempSelectedSize || 16;
+                    initGrid(size);
+                    // Ẩn modal bằng nhiều cách để chắc chắn
+                    gridSelectModal.classList.add('hidden');
+                    gridSelectModal.style.display = 'none';
+                } catch (err) {
+                    console.error('Lỗi khi khởi tạo lưới:', err);
+                    alert('Có lỗi khi tạo lưới: ' + err.message);
+                }
+            });
+        } else {
+            console.error('Không tìm thấy nút confirmGridSelectionBtn');
+        }
 
-        changeGridBtn.addEventListener('click', () => {
-            if (Object.keys(state.videoURLs).length > 0) {
-                if (!confirm('Đổi số ô sẽ xóa toàn bộ video hiện tại. Bạn có chắc không?')) return;
-                clearAllVideos();
-            }
-            gridSelectModal.classList.remove('hidden');
-        });
+        if (changeGridBtn) {
+            changeGridBtn.addEventListener('click', () => {
+                if (Object.keys(state.videoURLs).length > 0) {
+                    if (!confirm('Đổi số ô sẽ xóa toàn bộ video hiện tại. Bạn có chắc không?')) return;
+                    clearAllVideos();
+                }
+                gridSelectModal.classList.remove('hidden');
+                gridSelectModal.style.display = '';
+            });
+        }
 
         clearAllBtn.addEventListener('click', () => {
             if (Object.keys(state.videoURLs).length === 0) return;
             if (!confirm('Xóa tất cả video đã quay?')) return;
-            clearAllVideos();
-        });
 
-        playAllBtn.addEventListener('click', togglePlayAll);
-        stopAllBtn.addEventListener('click', stopAllPlayback);
-        exportVideoBtn.addEventListener('click', startExport);
-        cancelExportBtn.addEventListener('click', cancelExport);
-        closeRecorderBtn.addEventListener('click', closeRecordingModal);
-        startRecordBtn.addEventListener('click', startCountdownAndRecord);
-        stopRecordBtn.addEventListener('click', stopRecording);
-
-        // ========== GRID ==========
-        function getGridCols(size) {
-            if (size === 16) return 4;
-            if (size === 20) return 5;
-            if (size === 40) return 8;
-            return 4;
-        }
-
-        function initGrid(size) {
-            state.gridSize = size;
-            currentGridSizeLabel.textContent = size;
-            totalCountEl.textContent = size;
-
-            const cols = getGridCols(size);
-            gridContainer.className = `grid gap-3 w-full transition-all duration-300 grid-cols-2 sm:grid-cols-3 md:grid-cols-4`;
-           
+                                
