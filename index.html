@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A Cappella & Orchestra Grid Recorder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0b0f19;
+            color: #f3f4f6;
+        }
+
+        .glass-panel {
+            background: rgba(17, 24, 39, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0b0f19;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1f2937;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #374151;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); }
+            50% { box-shadow: 0 0 30px rgba(239, 68, 68, 0.8); }
+        }
+        .recording-glow {
+            animation: pulse-glow 1.5s infinite;
+        }
+
+        .recording-dot {
+            animation: blink 1s infinite;
+        }
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+
+        .slot-video {
+            transform: scaleX(-1);
+        }
+
+        .grid-slot {
+            aspect-ratio: 16 / 9;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between overflow-x-hidden">
+
+    <!-- HEADER -->
+    <header class="glass-panel sticky top-0 z-30 px-4 py-3 border-b border-gray-800">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-gradient-to-tr from-violet-600 to-indigo-500 rounded-xl shadow-lg shadow-indigo-500/30">
+                    <i data-lucide="grid" class="w-6 h-6 text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white via-gray-200 to-indigo-300">
+                        A Cappella Grid Recorder
+                    </h1>
+                    <p class="text-xs text-gray-400">Tạo studio hòa tấu & xướng âm đa góc quay</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 flex-wrap">
+                <button id="playAllBtn" class="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 font-semibold text-sm text-white shadow-lg shadow-emerald-900/30 transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i data-lucide="play" class="w-4 h-4 fill-white"></i>
+                    <span id="playAllText">Phát Tất Cả</span>
+                </button>
+                
+                <button id="stopAllBtn" class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 font-medium text-sm border border-gray-700 transition-all active:scale-95">
+                    <i data-lucide="square" class="w-4 h-4"></i>
+                    <span>Dừng</span>
+                </button>
+
+                <button id="exportVideoBtn" class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 font-semibold text-sm text-white shadow-lg shadow-indigo-900/40 transition-all active:scale-95">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                    <span>Xuất Video MP4</span>
+                </button>
+
+                <div class="h-6 w-px bg-gray-800 hidden sm:block"></div>
+
+                <button id="changeGridBtn" class="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700/80 text-gray-300 text-xs font-medium border border-gray-700/60 transition-all">
+                    <i data-lucide="layout-grid" class="w-4 h-4 text-indigo-400"></i>
+                    <span>Đổi Số Ô (<span id="currentGridSizeLabel">16</span>)</span>
+                </button>
+
+                <button id="clearAllBtn" class="p-2 rounded-xl bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-900/50 transition-all" title="Xóa tất cả video">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hidden Canvas for Export -->
+    <canvas id="exportCanvas" class="hidden"></canvas>
+
+    <!-- EXPORT PROGRESS MODAL -->
+    <div id="exportModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md hidden">
+        <div class="glass-panel max-w-md w-full rounded-2xl p-6 border border-gray-700 shadow-2xl text-center">
+            <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400 animate-pulse">
+                <i data-lucide="film" class="w-7 h-7"></i>
+            </div>
+            <h3 class="text-xl font-bold text-white mb-1">Đang Xuất Video MP4</h3>
+            <p class="text-xs text-gray-400 mb-5">Đang hợp nhất các góc quay và đường tiếng thành 1 file duy nhất...</p>
+
+            <div class="w-full bg-gray-800 rounded-full h-3 mb-3 overflow-hidden border border-gray-700">
+                <div id="exportProgressBar" class="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 h-full transition-all duration-200" style="width: 0%"></div>
+            </div>
+
+            <div class="flex items-center justify-between text-xs text-gray-400 mb-6">
+                <span id="exportStatusText">Đang khởi tạo...</span>
+                <span id="exportProgressPercent">0%</span>
+            </div>
+
+            <button id="cancelExportBtn" class="w-full py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 font-medium text-xs border border-gray-700 transition-all">
+                Hủy Xuất Video
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN WORKSPACE -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 flex flex-col justify-center">
+        <div class="flex items-center justify-between mb-4 px-2 text-xs text-gray-400">
+            <div class="flex items-center gap-2">
+                <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                <span>Trạng thái: <strong id="recordedCount" class="text-white">0</strong> / <span id="totalCount">16</span> ô đã quay</span>
+            </div>
+            <div class="text-gray-400 italic hidden sm:block">
+                * Nhấp trực tiếp vào ô bất kỳ để mở máy ảnh & quay clip.
+            </div>
+        </div>
+
+        <div id="gridContainer" class="grid gap-3 w-full transition-all duration-300">
+            <!-- Grid items generated by JS -->
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="glass-panel py-3 px-4 text-center text-xs text-gray-500 border-t border-gray-800/80">
+        Multi-Track Studio Grid Recorder &bull; Trực tiếp từ Webcam & Micro
+    </footer>
+
+    <!-- GRID SELECTION MODAL -->
+    <div id="gridSelectModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+        <div class="glass-panel max-w-lg w-full rounded-2xl p-6 md:p-8 border border-gray-700/80 shadow-2xl relative text-center">
+            <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400">
+                <i data-lucide="video" class="w-8 h-8"></i>
+            </div>
+            
+            <h2 class="text-2xl font-bold text-white mb-2">Chọn Số Lượng Ô Quay</h2>
+            <p class="text-gray-400 text-sm mb-6">Bạn muốn chia lưới video thành bao nhiêu ô cho dàn xướng âm của mình?</p>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                <button data-size="16" class="grid-option-btn selected group p-5 rounded-xl glass-card hover:bg-indigo-600/20 hover:border-indigo-500 border border-indigo-500 bg-indigo-600/20 transition-all text-center flex flex-col items-center relative">
+                    <div class="check-badge absolute top-2 right-2 text-indigo-400">
+                        <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+                    </div>
+                    <span class="text-3xl font-extrabold text-white group-hover:text-indigo-300 mb-1">16</span>
+                    <span class="text-xs font-semibold text-indigo-400 uppercase tracking-wider mb-2">4 x 4</span>
+                    <span class="text-[11px] text-gray-400">Chuẩn a cappella</span>
+                </button>
+
+                <button data-size="20" class="grid-option-btn group p-5 rounded-xl glass-card hover:bg-indigo-600/20 hover:border-indigo-500 border border-gray-700 transition-all text-center flex flex-col items-center relative">
+                    <div class="check-badge absolute top-2 right-2 text-indigo-400 hidden">
+                        <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+                    </div>
+                    <span class="text-3xl font-extrabold text-white group-hover:text-indigo-300 mb-1">20</span>
+                    <span class="text-xs font-semibold text-indigo-400 uppercase tracking-wider mb-2">5 x 4</span>
+                    <span class="text-[11px] text-gray-400">Đa dạng nhạc cụ</span>
+                </button>
+
+                <button data-size="40" class="grid-option-btn group p-5 rounded-xl glass-card hover:bg-indigo-600/20 hover:border-indigo-500 border border-gray-700 transition-all text-center flex flex-col items-center relative">
+                    <div class="check-badge absolute top-2 right-2 text-indigo-400 hidden">
+                        <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+                    </div>
+                    <span class="text-3xl font-extrabold text-white group-hover:text-indigo-300 mb-1">40</span>
+                    <span class="text-xs font-semibold text-indigo-400 uppercase tracking-wider mb-2">8 x 5</span>
+                    <span class="text-[11px] text-gray-400">Dàn giao hưởng lớn</span>
+                </button>
+            </div>
+
+            <button id="confirmGridSelectionBtn" class="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-base shadow-lg shadow-indigo-600/30 transition-all active:scale-[0.98] flex items-center justify-center gap-2 mb-4">
+                <span>Tiếp Tục Bắt Đầu</span>
+                <i data-lucide="arrow-right" class="w-5 h-5"></i>
+            </button>
+
+            <p class="text-xs text-gray-500">Lưu ý: Mọi video đều được thu trực tiếp bằng camera thiết bị.</p>
+        </div>
+    </div>
+
+    <!-- RECORDING MODAL -->
+    <div id="recordingModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md hidden">
+        <div class="glass-panel max-w-xl w-full rounded-2xl p-5 border border-gray-700 shadow-2xl relative flex flex-col">
+            <div class="flex items-center justify-between pb-3 mb-3 border-b border-gray-800">
+                <div class="flex items-center gap-2">
+                    <span id="modalSlotBadge" class="px-2.5 py-1 rounded-md bg-indigo-600/30 text-indigo-300 text-xs font-semibold border border-indigo-500/30">
+                        Ô số 1
+                    </span>
+                    <h3 class="font-semibold text-white text-base">Thu Video Trực Tiếp</h3>
+                </div>
+                <button id="closeRecorderBtn" class="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-all">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="relative w-full aspect-video bg-black rounded-xl overflow-hidden border border-gray-800 shadow-inner flex items-center justify-center">
+                <video id="webcamPreview" autoplay playsinline muted class="w-full h-full object-cover transform -scale-x-100"></video>
+
+                <div id="countdownOverlay" class="absolute inset-0 bg-black/60 flex items-center justify-center text-7xl font-black text-indigo-400 hidden backdrop-blur-xs">
+                    3
+                </div>
+
+                <div id="recordingBadge" class="absolute top-3 left-3 px-3 py-1 rounded-full bg-red-600/90 text-white text-xs font-semibold flex items-center gap-2 hidden shadow-lg recording-glow">
+                    <span class="w-2 h-2 rounded-full bg-white recording-dot"></span>
+                    <span>Đang thu: <span id="recordTimer">00:00</span></span>
+                </div>
+            </div>
+
+            <div class="mt-4 flex items-center justify-between">
+                <div class="text-xs text-gray-400">
+                    <span id="recordingStatusText">Sẵn sàng thu máy ảnh</span>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <button id="startRecordBtn" class="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-semibold text-sm shadow-lg shadow-red-900/40 transition-all active:scale-95">
+                        <i data-lucide="circle" class="w-4 h-4 fill-white"></i>
+                        <span>Bắt Đầu Quay</span>
+                    </button>
+
+                    <button id="stopRecordBtn" class="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-white font-semibold text-sm border border-gray-700 transition-all active:scale-95 hidden">
+                        <i data-lucide="square" class="w-4 h-4 fill-white"></i>
+                        <span>Dừng & Lưu Ô</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========== STATE ==========
+        const state = {
+            gridSize: 16,
+            activeSlotIndex: null,
+            recordedBlobs: {},
+            videoURLs: {},
+            slotLabels: {},
+            mediaStream: null,
+            mediaRecorder: null,
+            recordedChunks: [],
+            isRecording: false,
+            recordTimerInterval: null,
+            recordSeconds: 0,
+            isPlayingAll: false,
+            isExporting: false,
+            exportMediaRecorder: null,
+            exportAnimationFrame: null,
+            exportCancelled: false
+        };
+
+        // ========== DOM ==========
+        const gridSelectModal = document.getElementById('gridSelectModal');
+        const gridContainer = document.getElementById('gridContainer');
+        const changeGridBtn = document.getElementById('changeGridBtn');
+        const currentGridSizeLabel = document.getElementById('currentGridSizeLabel');
+        const recordedCountEl = document.getElementById('recordedCount');
+        const totalCountEl = document.getElementById('totalCount');
+        const clearAllBtn = document.getElementById('clearAllBtn');
+        const playAllBtn = document.getElementById('playAllBtn');
+        const playAllText = document.getElementById('playAllText');
+        const stopAllBtn = document.getElementById('stopAllBtn');
+        const exportVideoBtn = document.getElementById('exportVideoBtn');
+        const exportModal = document.getElementById('exportModal');
+        const exportProgressBar = document.getElementById('exportProgressBar');
+        const exportProgressPercent = document.getElementById('exportProgressPercent');
+        const exportStatusText = document.getElementById('exportStatusText');
+        const cancelExportBtn = document.getElementById('cancelExportBtn');
+        const exportCanvas = document.getElementById('exportCanvas');
+        const recordingModal = document.getElementById('recordingModal');
+        const webcamPreview = document.getElementById('webcamPreview');
+        const countdownOverlay = document.getElementById('countdownOverlay');
+        const recordingBadge = document.getElementById('recordingBadge');
+        const recordTimer = document.getElementById('recordTimer');
+        const recordingStatusText = document.getElementById('recordingStatusText');
+        const startRecordBtn = document.getElementById('startRecordBtn');
+        const stopRecordBtn = document.getElementById('stopRecordBtn');
+        const closeRecorderBtn = document.getElementById('closeRecorderBtn');
+        const modalSlotBadge = document.getElementById('modalSlotBadge');
+        const confirmGridSelectionBtn = document.getElementById('confirmGridSelectionBtn');
+
+        let tempSelectedSize = 16;
+
+        // ========== INIT ==========
+        lucide.createIcons();
+
+        // Grid option selection
+        document.querySelectorAll('.grid-option-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.grid-option-btn').forEach(b => {
+                    b.classList.remove('selected', 'border-indigo-500', 'bg-indigo-600/20');
+                    b.classList.add('border-gray-700');
+                    const badge = b.querySelector('.check-badge');
+                    if (badge) badge.classList.add('hidden');
+                });
+
+                btn.classList.add('selected', 'border-indigo-500', 'bg-indigo-600/20');
+                btn.classList.remove('border-gray-700');
+                const selectedBadge = btn.querySelector('.check-badge');
+                if (selectedBadge) selectedBadge.classList.remove('hidden');
+
+                tempSelectedSize = parseInt(btn.getAttribute('data-size'));
+            });
+        });
+
+        confirmGridSelectionBtn.addEventListener('click', () => {
+            initGrid(tempSelectedSize);
+            gridSelectModal.classList.add('hidden');
+        });
+
+        changeGridBtn.addEventListener('click', () => {
+            if (Object.keys(state.videoURLs).length > 0) {
+                if (!confirm('Đổi số ô sẽ xóa toàn bộ video hiện tại. Bạn có chắc không?')) return;
+                clearAllVideos();
+            }
+            gridSelectModal.classList.remove('hidden');
+        });
+
+        clearAllBtn.addEventListener('click', () => {
+            if (Object.keys(state.videoURLs).length === 0) return;
+            if (!confirm('Xóa tất cả video đã quay?')) return;
+            clearAllVideos();
+        });
+
+        playAllBtn.addEventListener('click', togglePlayAll);
+        stopAllBtn.addEventListener('click', stopAllPlayback);
+        exportVideoBtn.addEventListener('click', startExport);
+        cancelExportBtn.addEventListener('click', cancelExport);
+        closeRecorderBtn.addEventListener('click', closeRecordingModal);
+        startRecordBtn.addEventListener('click', startCountdownAndRecord);
+        stopRecordBtn.addEventListener('click', stopRecording);
+
+        // ========== GRID ==========
+        function getGridCols(size) {
+            if (size === 16) return 4;
+            if (size === 20) return 5;
+            if (size === 40) return 8;
+            return 4;
+        }
+
+        function initGrid(size) {
+            state.gridSize = size;
+            currentGridSizeLabel.textContent = size;
+            totalCountEl.textContent = size;
+
+            const cols = getGridCols(size);
+            gridContainer.className = `grid gap-3 w-full transition-all duration-300 grid-cols-2 sm:grid-cols-3 md:grid-cols-4`;
+           
