@@ -8,12 +8,8 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0b0f19;
-            color: #f3f4f6;
-        }
+
+        body { font-family: 'Inter', sans-serif; background-color: #0b0f19; color: #f3f4f6; }
 
         .glass-panel {
             background: rgba(17, 24, 39, 0.75);
@@ -21,50 +17,28 @@
             -webkit-backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.08);
         }
-
         .glass-card {
             background: rgba(30, 41, 59, 0.6);
             backdrop-filter: blur(8px);
             border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #0b0f19;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #1f2937;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #374151;
-        }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0b0f19; }
+        ::-webkit-scrollbar-thumb { background: #1f2937; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #374151; }
 
         @keyframes pulse-glow {
             0%, 100% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); }
             50% { box-shadow: 0 0 30px rgba(239, 68, 68, 0.8); }
         }
-        .recording-glow {
-            animation: pulse-glow 1.5s infinite;
-        }
+        .recording-glow { animation: pulse-glow 1.5s infinite; }
+        .recording-dot { animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
 
-        .recording-dot {
-            animation: blink 1s infinite;
-        }
-        @keyframes blink {
-            50% { opacity: 0; }
-        }
-
-        .slot-video {
-            transform: scaleX(-1);
-        }
-
-        .grid-slot {
-            aspect-ratio: 16 / 9;
-        }
+        .slot-video { transform: scaleX(-1); }
+        .grid-slot { aspect-ratio: 16 / 9; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between overflow-x-hidden">
@@ -89,7 +63,7 @@
                     <i data-lucide="play" class="w-4 h-4 fill-white"></i>
                     <span id="playAllText">Phát Tất Cả</span>
                 </button>
-                
+
                 <button id="stopAllBtn" class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 font-medium text-sm border border-gray-700 transition-all active:scale-95">
                     <i data-lucide="square" class="w-4 h-4"></i>
                     <span>Dừng</span>
@@ -97,7 +71,7 @@
 
                 <button id="exportVideoBtn" class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 font-semibold text-sm text-white shadow-lg shadow-indigo-900/40 transition-all active:scale-95">
                     <i data-lucide="download" class="w-4 h-4"></i>
-                    <span>Xuất Video MP4</span>
+                    <span>Xuất Video</span>
                 </button>
 
                 <div class="h-6 w-px bg-gray-800 hidden sm:block"></div>
@@ -123,8 +97,8 @@
             <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400 animate-pulse">
                 <i data-lucide="film" class="w-7 h-7"></i>
             </div>
-            <h3 class="text-xl font-bold text-white mb-1">Đang Xuất Video MP4</h3>
-            <p class="text-xs text-gray-400 mb-5">Đang hợp nhất các góc quay và đường tiếng thành 1 file duy nhất...</p>
+            <h3 class="text-xl font-bold text-white mb-1">Đang Xuất Video</h3>
+            <p class="text-xs text-gray-400 mb-5">Đang hợp nhất các góc quay và đường tiếng thành 1 file duy nhất. Video sẽ được phát trong lúc xuất, vui lòng đợi đến khi xong.</p>
 
             <div class="w-full bg-gray-800 rounded-full h-3 mb-3 overflow-hidden border border-gray-700">
                 <div id="exportProgressBar" class="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 h-full transition-all duration-200" style="width: 0%"></div>
@@ -149,13 +123,11 @@
                 <span>Trạng thái: <strong id="recordedCount" class="text-white">0</strong> / <span id="totalCount">16</span> ô đã quay</span>
             </div>
             <div class="text-gray-400 italic hidden sm:block">
-                * Nhấp trực tiếp vào ô bất kỳ để mở máy ảnh & quay clip.
+                * Nhấp vào ô trống để mở máy ảnh & quay clip.
             </div>
         </div>
 
-        <div id="gridContainer" class="grid gap-3 w-full transition-all duration-300">
-            <!-- Grid items generated by JS -->
-        </div>
+        <div id="gridContainer" class="grid gap-3 w-full transition-all duration-300"></div>
     </main>
 
     <!-- FOOTER -->
@@ -169,7 +141,7 @@
             <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400">
                 <i data-lucide="video" class="w-8 h-8"></i>
             </div>
-            
+
             <h2 class="text-2xl font-bold text-white mb-2">Chọn Số Lượng Ô Quay</h2>
             <p class="text-gray-400 text-sm mb-6">Bạn muốn chia lưới video thành bao nhiêu ô cho dàn xướng âm của mình?</p>
 
@@ -229,7 +201,7 @@
             <div class="relative w-full aspect-video bg-black rounded-xl overflow-hidden border border-gray-800 shadow-inner flex items-center justify-center">
                 <video id="webcamPreview" autoplay playsinline muted class="w-full h-full object-cover transform -scale-x-100"></video>
 
-                <div id="countdownOverlay" class="absolute inset-0 bg-black/60 flex items-center justify-center text-7xl font-black text-indigo-400 hidden backdrop-blur-xs">
+                <div id="countdownOverlay" class="absolute inset-0 bg-black/60 flex items-center justify-center text-7xl font-black text-indigo-400 hidden">
                     3
                 </div>
 
@@ -239,9 +211,14 @@
                 </div>
             </div>
 
+            <label class="mt-3 flex items-center gap-2 text-xs text-gray-400 cursor-pointer select-none">
+                <input id="playAlongChk" type="checkbox" checked class="accent-indigo-500">
+                <span>Phát các ô đã quay khi thu (nên đeo tai nghe để micro không thu lại tiếng loa)</span>
+            </label>
+
             <div class="mt-4 flex items-center justify-between">
                 <div class="text-xs text-gray-400">
-                    <span id="recordingStatusText">Sẵn sàng thu máy ảnh</span>
+                    <span id="recordingStatusText">Đang mở máy ảnh...</span>
                 </div>
 
                 <div class="flex items-center gap-3">
@@ -266,13 +243,17 @@
             activeSlotIndex: null,
             recordedBlobs: {},
             videoURLs: {},
+            durations: {},
             slotLabels: {},
             mediaStream: null,
             mediaRecorder: null,
             recordedChunks: [],
             isRecording: false,
+            isCountingDown: false,
+            discardRecording: false,
             recordTimerInterval: null,
             recordSeconds: 0,
+            recordStartTime: 0,
             isPlayingAll: false,
             isExporting: false,
             exportMediaRecorder: null,
@@ -280,100 +261,106 @@
             exportCancelled: false
         };
 
+        const GRID_COLS = { 16: 4, 20: 5, 40: 8 };
+
         // ========== DOM ==========
-        const gridSelectModal = document.getElementById('gridSelectModal');
-        const gridContainer = document.getElementById('gridContainer');
-        const changeGridBtn = document.getElementById('changeGridBtn');
-        const currentGridSizeLabel = document.getElementById('currentGridSizeLabel');
-        const recordedCountEl = document.getElementById('recordedCount');
-        const totalCountEl = document.getElementById('totalCount');
-        const clearAllBtn = document.getElementById('clearAllBtn');
-        const playAllBtn = document.getElementById('playAllBtn');
-        const playAllText = document.getElementById('playAllText');
-        const stopAllBtn = document.getElementById('stopAllBtn');
-        const exportVideoBtn = document.getElementById('exportVideoBtn');
-        const exportModal = document.getElementById('exportModal');
-        const exportProgressBar = document.getElementById('exportProgressBar');
-        const exportProgressPercent = document.getElementById('exportProgressPercent');
-        const exportStatusText = document.getElementById('exportStatusText');
-        const cancelExportBtn = document.getElementById('cancelExportBtn');
-        const exportCanvas = document.getElementById('exportCanvas');
-        const recordingModal = document.getElementById('recordingModal');
-        const webcamPreview = document.getElementById('webcamPreview');
-        const countdownOverlay = document.getElementById('countdownOverlay');
-        const recordingBadge = document.getElementById('recordingBadge');
-        const recordTimer = document.getElementById('recordTimer');
-        const recordingStatusText = document.getElementById('recordingStatusText');
-        const startRecordBtn = document.getElementById('startRecordBtn');
-        const stopRecordBtn = document.getElementById('stopRecordBtn');
-        const closeRecorderBtn = document.getElementById('closeRecorderBtn');
-        const modalSlotBadge = document.getElementById('modalSlotBadge');
-        const confirmGridSelectionBtn = document.getElementById('confirmGridSelectionBtn');
+        const $ = (id) => document.getElementById(id);
+        const gridSelectModal = $('gridSelectModal');
+        const gridContainer = $('gridContainer');
+        const changeGridBtn = $('changeGridBtn');
+        const currentGridSizeLabel = $('currentGridSizeLabel');
+        const recordedCountEl = $('recordedCount');
+        const totalCountEl = $('totalCount');
+        const clearAllBtn = $('clearAllBtn');
+        const playAllBtn = $('playAllBtn');
+        const playAllText = $('playAllText');
+        const stopAllBtn = $('stopAllBtn');
+        const exportVideoBtn = $('exportVideoBtn');
+        const exportModal = $('exportModal');
+        const exportProgressBar = $('exportProgressBar');
+        const exportProgressPercent = $('exportProgressPercent');
+        const exportStatusText = $('exportStatusText');
+        const cancelExportBtn = $('cancelExportBtn');
+        const exportCanvas = $('exportCanvas');
+        const recordingModal = $('recordingModal');
+        const webcamPreview = $('webcamPreview');
+        const countdownOverlay = $('countdownOverlay');
+        const recordingBadge = $('recordingBadge');
+        const recordTimer = $('recordTimer');
+        const recordingStatusText = $('recordingStatusText');
+        const startRecordBtn = $('startRecordBtn');
+        const stopRecordBtn = $('stopRecordBtn');
+        const closeRecorderBtn = $('closeRecorderBtn');
+        const modalSlotBadge = $('modalSlotBadge');
+        const confirmGridSelectionBtn = $('confirmGridSelectionBtn');
+        const playAlongChk = $('playAlongChk');
 
         let tempSelectedSize = 16;
 
-        // ========== INIT ==========
-        // An toàn với Lucide (nếu CDN lỗi cũng không làm hỏng app)
+        // ========== HELPERS ==========
         function safeCreateIcons() {
             try {
-                if (window.lucide && typeof lucide.createIcons === 'function') {
-                    lucide.createIcons();
-                }
+                if (window.lucide && typeof lucide.createIcons === 'function') lucide.createIcons();
             } catch (e) {
                 console.warn('Lucide icons error:', e);
             }
         }
         safeCreateIcons();
 
-        // Grid option selection
-        document.querySelectorAll('.grid-option-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.grid-option-btn').forEach(b => {
-                    b.classList.remove('selected', 'border-indigo-500', 'bg-indigo-600/20');
-                    b.classList.add('border-gray-700');
-                    const badge = b.querySelector('.check-badge');
-                    if (badge) badge.classList.add('hidden');
-                });
-
-                btn.classList.add('selected', 'border-indigo-500', 'bg-indigo-600/20');
-                btn.classList.remove('border-gray-700');
-                const selectedBadge = btn.querySelector('.check-badge');
-                if (selectedBadge) selectedBadge.classList.remove('hidden');
-
-                tempSelectedSize = parseInt(btn.getAttribute('data-size')) || 16;
-            });
-        });
-
-        // Nút Tiếp tục — bắt buộc phải chạy được
-        if (confirmGridSelectionBtn) {
-            confirmGridSelectionBtn.addEventListener('click', function () {
-                try {
-                    const size = tempSelectedSize || 16;
-                    initGrid(size);
-                    // Ẩn modal bằng nhiều cách để chắc chắn
-                    gridSelectModal.classList.add('hidden');
-                    gridSelectModal.style.display = 'none';
-                } catch (err) {
-                    console.error('Lỗi khi khởi tạo lưới:', err);
-                    alert('Có lỗi khi tạo lưới: ' + err.message);
-                }
-            });
-        } else {
-            console.error('Không tìm thấy nút confirmGridSelectionBtn');
+        function pad(n) { return String(n).padStart(2, '0'); }
+        function fmtTime(s) { return pad(Math.floor(s / 60)) + ':' + pad(Math.floor(s % 60)); }
+        function getSlotVideo(i) { return document.getElementById('slotVideo-' + i); }
+        function recordedIndexes() {
+            return Object.keys(state.videoURLs).map(Number).sort((a, b) => a - b);
         }
 
-        if (changeGridBtn) {
-            changeGridBtn.addEventListener('click', () => {
-                if (Object.keys(state.videoURLs).length > 0) {
-                    if (!confirm('Đổi số ô sẽ xóa toàn bộ video hiện tại. Bạn có chắc không?')) return;
-                    clearAllVideos();
-                }
-                gridSelectModal.classList.remove('hidden');
-                gridSelectModal.style.display = '';
-            });
+        function pickMimeType(list) {
+            if (typeof MediaRecorder === 'undefined') return '';
+            for (const t of list) {
+                try { if (MediaRecorder.isTypeSupported(t)) return t; } catch (e) {}
+            }
+            return '';
         }
 
-        clearAllBtn.addEventListener('click', () => {
-            if (Object.keys(state.videoURLs).length === 0) return;
-            if (!confirm('Xóa tất cả video đã quay?')) return;
-    
+        // ========== GRID ==========
+        function initGrid(size) {
+            state.gridSize = size;
+            currentGridSizeLabel.textContent = size;
+            totalCountEl.textContent = size;
+
+            const cols = GRID_COLS[size] || 4;
+            gridContainer.style.gridTemplateColumns = 'repeat(' + cols + ', minmax(0, 1fr))';
+            gridContainer.innerHTML = '';
+
+            for (let i = 0; i < size; i++) {
+                const slot = document.createElement('div');
+                slot.id = 'slot-' + i;
+                slot.className = 'grid-slot relative rounded-xl overflow-hidden glass-card border border-gray-700/60 hover:border-indigo-500/60 cursor-pointer transition-all flex items-center justify-center';
+                slot.addEventListener('click', () => onSlotClick(i));
+                gridContainer.appendChild(slot);
+                renderSlot(i);
+            }
+            updateStatus();
+            safeCreateIcons();
+        }
+
+        function renderSlot(i) {
+            const slot = $('slot-' + i);
+            if (!slot) return;
+            const label = state.slotLabels[i] || ('Ô ' + (i + 1));
+            const url = state.videoURLs[i];
+
+            if (!url) {
+                slot.innerHTML =
+                    '<div class="flex flex-col items-center gap-1 text-gray-500 pointer-events-none">' +
+                    '<i data-lucide="video" class="w-5 h-5"></i>' +
+                    '<span class="text-[11px] font-medium">' + label + '</span>' +
+                    '</div>';
+                return;
+            }
+
+            slot.innerHTML =
+                '<video id="slotVideo-' + i + '" class="slot-video w-full h-full object-cover" src="' + url + '" playsinline preload="auto"></video>' +
+                '<span class="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded bg-black/60 text-[10px] text-white font-medium">' + label + '</span>' +
+                '<div class="absolute bottom-1.5 right-1.5 flex gap-1">' +
+                '<button data-act="play" class="p-1 rounded bg-black/60 hover:bg-emerald-
